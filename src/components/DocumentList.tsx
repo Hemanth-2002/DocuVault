@@ -9,7 +9,6 @@ import {
   Box,
   Stack,
   Card,
-  CardActionArea,
   Tooltip,
   useMediaQuery,
   useTheme,
@@ -61,33 +60,34 @@ export function DocumentList({ documents, onView, onDownload, onDelete, emptyMes
       <Stack spacing={1.5} sx={{ p: 1.5 }}>
         {documents.map((doc) => (
           <Card key={doc.id} variant="outlined" sx={{ borderRadius: 2 }}>
-            <CardActionArea onClick={() => onView(doc)} sx={{ p: 1.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                {iconFor(doc.mime_type)}
-                <Box sx={{ minWidth: 0, flexGrow: 1 }}>
-                  <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>
-                    {doc.file_name}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {formatSize(doc.size_bytes)} · {new Date(doc.uploaded_at).toLocaleDateString()}
-                  </Typography>
-                </Box>
-                <Box onClick={(e) => e.stopPropagation()} sx={{ display: 'flex' }}>
-                  <Tooltip title="Download">
-                    <IconButton onClick={() => onDownload(doc)} size="small">
-                      <DownloadIcon fontSize="small" />
+            <Box
+              onClick={() => onView(doc)}
+              sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, cursor: 'pointer' }}
+            >
+              {iconFor(doc.mime_type)}
+              <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+                <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>
+                  {doc.file_name}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {formatSize(doc.size_bytes)} · {new Date(doc.uploaded_at).toLocaleDateString()}
+                </Typography>
+              </Box>
+              <Box onClick={(e) => e.stopPropagation()} sx={{ display: 'flex' }}>
+                <Tooltip title="Download">
+                  <IconButton onClick={() => onDownload(doc)} size="small">
+                    <DownloadIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                {onDelete && (
+                  <Tooltip title="Delete">
+                    <IconButton onClick={() => onDelete(doc)} size="small" color="error">
+                      <DeleteIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                  {onDelete && (
-                    <Tooltip title="Delete">
-                      <IconButton onClick={() => onDelete(doc)} size="small" color="error">
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  )}
-                </Box>
+                )}
               </Box>
-            </CardActionArea>
+            </Box>
           </Card>
         ))}
       </Stack>
