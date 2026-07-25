@@ -16,6 +16,7 @@ export function UserDashboard() {
   const [uploading, setUploading] = useState(false)
 
   const userId = session!.user.id
+  const userEmail = session!.user.email ?? userId
 
   const loadDocuments = useCallback(async () => {
     setLoadingDocs(true)
@@ -40,7 +41,7 @@ export function UserDashboard() {
   const handleFiles = async (files: File[]) => {
     setUploading(true)
     for (const file of files) {
-      const path = `${userId}/${crypto.randomUUID()}-${file.name}`
+      const path = `${userEmail}/${crypto.randomUUID()}-${file.name}`
       const { error: uploadError } = await supabase.storage
         .from(DOCUMENTS_BUCKET)
         .upload(path, file, { contentType: file.type || undefined })

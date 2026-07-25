@@ -77,17 +77,23 @@ create policy "documents_delete_own"
   to authenticated
   using (auth.uid() = user_id);
 
--- storage bucket for the actual files, private, one folder per user id
+-- storage bucket for the actual files, private, one folder per user email
 insert into storage.buckets (id, name, public)
 values ('documents', 'documents', false)
 on conflict (id) do nothing;
 
+-- folder is keyed by the user's email; the uid fallback check keeps any
+-- objects uploaded before this scheme change accessible to their owner
 create policy "documents_bucket_select_own_or_admin"
   on storage.objects for select
   to authenticated
   using (
     bucket_id = 'documents'
-    and ((storage.foldername(name))[1] = auth.uid()::text or public.is_admin())
+    and (
+      (storage.foldername(name))[1] = auth.email()
+      or (storage.foldername(name))[1] = auth.uid()::text
+      or public.is_admin()
+    )
   );
 
 create policy "documents_bucket_insert_own"
@@ -95,7 +101,7 @@ create policy "documents_bucket_insert_own"
   to authenticated
   with check (
     bucket_id = 'documents'
-    and (storage.foldername(name))[1] = auth.uid()::text
+    and (storage.foldername(name))[1] = auth.email()
   );
 
 create policy "documents_bucket_delete_own"
@@ -103,7 +109,10 @@ create policy "documents_bucket_delete_own"
   to authenticated
   using (
     bucket_id = 'documents'
-    and (storage.foldername(name))[1] = auth.uid()::text
+    and (
+      (storage.foldername(name))[1] = auth.email()
+      or (storage.foldername(name))[1] = auth.uid()::text
+    )
   );
 
 -- lock down helper function execute grants (defense in depth against PostgREST RPC exposure)
