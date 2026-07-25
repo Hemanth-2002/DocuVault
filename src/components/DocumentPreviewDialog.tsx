@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -14,6 +14,8 @@ import {
   TextField,
   Stack,
   Alert,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import DownloadIcon from '@mui/icons-material/Download'
@@ -41,6 +43,9 @@ interface DocumentPreviewDialogProps {
 }
 
 export function DocumentPreviewDialog({ doc, onClose }: DocumentPreviewDialogProps) {
+  const theme = useTheme()
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'))
+
   const {
     data: blob,
     isLoading,
@@ -76,6 +81,12 @@ export function DocumentPreviewDialog({ doc, onClose }: DocumentPreviewDialogPro
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
   const [chatError, setChatError] = useState<string | null>(null)
+  const [scrollSignal, setScrollSignal] = useState(0)
+  const chatScrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: 'smooth' })
+  }, [scrollSignal])
 
   useEffect(() => {
     setObjectUrl(null)
@@ -110,7 +121,7 @@ export function DocumentPreviewDialog({ doc, onClose }: DocumentPreviewDialogPro
   }, [doc?.id])
 
   useEffect(() => {
-    if (tab !== 'ask' || !doc || !supportsAi || summary !== null || summaryLoading) return
+    if (tab !== 'ask' || !doc || !supportsAi || summary !== null) return
     let cancelled = false
     setSummaryLoading(true)
     summarizeDocument(doc.id)
@@ -126,7 +137,7 @@ export function DocumentPreviewDialog({ doc, onClose }: DocumentPreviewDialogPro
     return () => {
       cancelled = true
     }
-  }, [tab, doc, supportsAi, summary, summaryLoading])
+  }, [tab, doc?.id, supportsAi, summary])
 
   const handleDownload = () => {
     if (!blob || !doc) return
@@ -146,6 +157,7 @@ export function DocumentPreviewDialog({ doc, onClose }: DocumentPreviewDialogPro
     setChatInput('')
     setChatError(null)
     setChatMessages((prev) => [...prev, { role: 'user', content: question }, { role: 'assistant', content: '' }])
+    setScrollSignal((n) => n + 1)
     setChatLoading(true)
     try {
       await askDocumentStream(doc.id, question, priorMessages, (chunk) => {
@@ -165,7 +177,7 @@ export function DocumentPreviewDialog({ doc, onClose }: DocumentPreviewDialogPro
   }
 
   return (
-    <Dialog open={!!doc} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={!!doc} onClose={onClose} maxWidth="md" fullWidth fullScreen={fullScreen}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Box sx={{ flexGrow: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {doc?.file_name}
@@ -244,20 +256,30 @@ export function DocumentPreviewDialog({ doc, onClose }: DocumentPreviewDialogPro
 
         {tab === 'ask' && (
           <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1, minHeight: 0, gap: 2 }}>
-            <Box>
-              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                Summary
-              </Typography>
-              {summaryLoading && <CircularProgress size={20} />}
-              {summaryError && <Alert severity="error">{summaryError}</Alert>}
-              {summary && !summaryLoading && (
-                <Box sx={markdownSx}>
-                  <ReactMarkdown>{summary}</ReactMarkdown>
+            <Stack ref={chatScrollRef} spacing={1.5} sx={{ flexGrow: 1, overflowY: 'auto', minHeight: 0 }}>
+              {(summaryLoading || summary || summaryError) && (
+                <Box sx={{ alignSelf: 'flex-start', maxWidth: '80%' }}>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5, ml: 0.5 }}>
+                    Summary
+                  </Typography>
+                  {summaryError ? (
+                    <Alert severity="error" sx={{ py: 0.5 }}>
+                      {summaryError}
+                    </Alert>
+                  ) : (
+                    <Box sx={{ px: 1.5, py: 1, borderRadius: 2, bgcolor: 'action.hover' }}>
+                      {summaryLoading ? (
+                        <CircularProgress size={16} />
+                      ) : (
+                        <Box sx={markdownSx}>
+                          <ReactMarkdown>{summary}</ReactMarkdown>
+                        </Box>
+                      )}
+                    </Box>
+                  )}
                 </Box>
               )}
-            </Box>
 
-            <Stack spacing={1.5} sx={{ flexGrow: 1, overflowY: 'auto', minHeight: 0 }}>
               {chatMessages.map((message, index) =>
                 message.content === '' ? null : (
                   <Box
@@ -312,11 +334,13 @@ export function DocumentPreviewDialog({ doc, onClose }: DocumentPreviewDialogPro
         )}
       </DialogContent>
 
-      <DialogActions>
-        <Button startIcon={<DownloadIcon />} onClick={handleDownload} disabled={!blob}>
-          Download
-        </Button>
-      </DialogActions>
+      {tab === 'preview' && (
+        <DialogActions>
+          <Button startIcon={<DownloadIcon />} onClick={handleDownload} disabled={!blob}>
+            Download
+          </Button>
+        </DialogActions>
+      )}
     </Dialog>
   )
 }
