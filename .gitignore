@@ -14,6 +14,8 @@ dist-ssr
 .env
 .claude
 .mcp.json
+supabase/.env.secrets.local
+supabase/.temp
 
 # Editor directories and files
 .vscode/*

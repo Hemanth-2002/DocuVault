@@ -19,4 +19,5 @@ export interface DocumentRow {
   mime_type: string | null
   size_bytes: number
   uploaded_at: string
+  summary: string | null
 }

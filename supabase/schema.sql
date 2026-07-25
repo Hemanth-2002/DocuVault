@@ -115,6 +115,22 @@ create policy "documents_bucket_delete_own"
     )
   );
 
+-- AI summary + Q&A: cached extracted text and generated summary per document
+alter table public.documents
+  add column extracted_text text,
+  add column summary text;
+
+create policy "documents_update_own_or_admin"
+  on public.documents for update
+  to authenticated
+  using (auth.uid() = user_id or public.is_admin())
+  with check (auth.uid() = user_id or public.is_admin());
+
+-- restrict what authenticated users can actually change via this policy:
+-- only the two AI-derived columns above, never file_name/storage_path/etc.
+revoke update on public.documents from authenticated;
+grant update (extracted_text, summary) on public.documents to authenticated;
+
 -- lock down helper function execute grants (defense in depth against PostgREST RPC exposure)
 revoke execute on function public.handle_new_user() from public, anon, authenticated;
 revoke execute on function public.is_admin() from public, anon;
