@@ -137,7 +137,7 @@ export function UserDashboard() {
           onRejected={(msg) => enqueueSnackbar(msg, { variant: 'warning' })}
         />
 
-        <Paper variant="outlined" sx={{ borderRadius: 3 }}>
+        <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
           {loadingDocs ? (
             <Box sx={{ p: 4, textAlign: 'center' }}>
               <Typography color="text.secondary">Loading…</Typography>

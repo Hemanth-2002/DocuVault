@@ -49,7 +49,7 @@ export function DocumentList({ documents, onView, onDownload, onDelete, emptyMes
   }
 
   return (
-    <Table>
+    <Table sx={{ '& tr:last-child td': { borderBottom: 0 } }}>
       <TableHead>
         <TableRow>
           <TableCell>Name</TableCell>

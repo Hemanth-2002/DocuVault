@@ -65,7 +65,7 @@ export function AdminUserDocuments() {
           <Typography color="text.secondary">Viewing this user's documents.</Typography>
         </Box>
 
-        <Paper variant="outlined" sx={{ borderRadius: 3 }}>
+        <Paper variant="outlined" sx={{ borderRadius: 3, overflow: 'hidden' }}>
           {loading ? (
             <Box sx={{ p: 4, textAlign: 'center' }}>
               <Typography color="text.secondary">Loading…</Typography>
