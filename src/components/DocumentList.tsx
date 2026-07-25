@@ -33,12 +33,13 @@ function iconFor(mime: string | null) {
 
 interface DocumentListProps {
   documents: DocumentRow[]
+  onView: (doc: DocumentRow) => void
   onDownload: (doc: DocumentRow) => void
   onDelete?: (doc: DocumentRow) => void
   emptyMessage?: string
 }
 
-export function DocumentList({ documents, onDownload, onDelete, emptyMessage }: DocumentListProps) {
+export function DocumentList({ documents, onView, onDownload, onDelete, emptyMessage }: DocumentListProps) {
   if (documents.length === 0) {
     return (
       <Box sx={{ textAlign: 'center', py: 6 }}>
@@ -59,7 +60,7 @@ export function DocumentList({ documents, onDownload, onDelete, emptyMessage }: 
       </TableHead>
       <TableBody>
         {documents.map((doc) => (
-          <TableRow key={doc.id} hover>
+          <TableRow key={doc.id} hover onClick={() => onView(doc)} sx={{ cursor: 'pointer' }}>
             <TableCell>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                 {iconFor(doc.mime_type)}
@@ -68,7 +69,7 @@ export function DocumentList({ documents, onDownload, onDelete, emptyMessage }: 
             </TableCell>
             <TableCell>{formatSize(doc.size_bytes)}</TableCell>
             <TableCell>{new Date(doc.uploaded_at).toLocaleString()}</TableCell>
-            <TableCell align="right">
+            <TableCell align="right" onClick={(e) => e.stopPropagation()}>
               <Tooltip title="Download">
                 <IconButton onClick={() => onDownload(doc)} size="small">
                   <DownloadIcon fontSize="small" />

@@ -5,6 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useSnackbar } from 'notistack'
 import { AppLayout } from '../components/AppLayout'
 import { DocumentList } from '../components/DocumentList'
+import { DocumentPreviewDialog } from '../components/DocumentPreviewDialog'
 import { supabase, DOCUMENTS_BUCKET } from '../lib/supabaseClient'
 import type { DocumentRow, Profile } from '../types'
 
@@ -15,6 +16,7 @@ export function AdminUserDocuments() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [documents, setDocuments] = useState<DocumentRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [previewDoc, setPreviewDoc] = useState<DocumentRow | null>(null)
 
   useEffect(() => {
     if (!userId) return
@@ -71,12 +73,15 @@ export function AdminUserDocuments() {
           ) : (
             <DocumentList
               documents={documents}
+              onView={setPreviewDoc}
               onDownload={handleDownload}
               emptyMessage="This user hasn't uploaded any documents yet."
             />
           )}
         </Paper>
       </Stack>
+
+      <DocumentPreviewDialog doc={previewDoc} onClose={() => setPreviewDoc(null)} />
     </AppLayout>
   )
 }

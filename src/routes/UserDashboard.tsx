@@ -4,6 +4,7 @@ import { useSnackbar } from 'notistack'
 import { AppLayout } from '../components/AppLayout'
 import { UploadDropzone } from '../components/UploadDropzone'
 import { DocumentList } from '../components/DocumentList'
+import { DocumentPreviewDialog } from '../components/DocumentPreviewDialog'
 import { supabase, DOCUMENTS_BUCKET } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import type { DocumentRow } from '../types'
@@ -14,6 +15,7 @@ export function UserDashboard() {
   const [documents, setDocuments] = useState<DocumentRow[]>([])
   const [loadingDocs, setLoadingDocs] = useState(true)
   const [uploading, setUploading] = useState(false)
+  const [previewDoc, setPreviewDoc] = useState<DocumentRow | null>(null)
 
   const userId = session!.user.id
   const userEmail = session!.user.email ?? userId
@@ -38,10 +40,29 @@ export function UserDashboard() {
     loadDocuments()
   }, [loadDocuments])
 
+  const getUniqueStoragePath = async (fileName: string) => {
+    const { data: existing } = await supabase.storage.from(DOCUMENTS_BUCKET).list(userEmail, { limit: 1000 })
+    const existingNames = new Set((existing ?? []).map((f) => f.name))
+
+    if (!existingNames.has(fileName)) return `${userEmail}/${fileName}`
+
+    const dotIndex = fileName.lastIndexOf('.')
+    const base = dotIndex > 0 ? fileName.slice(0, dotIndex) : fileName
+    const ext = dotIndex > 0 ? fileName.slice(dotIndex) : ''
+
+    let counter = 1
+    let candidate = `${base} (${counter})${ext}`
+    while (existingNames.has(candidate)) {
+      counter += 1
+      candidate = `${base} (${counter})${ext}`
+    }
+    return `${userEmail}/${candidate}`
+  }
+
   const handleFiles = async (files: File[]) => {
     setUploading(true)
     for (const file of files) {
-      const path = `${userEmail}/${crypto.randomUUID()}-${file.name}`
+      const path = await getUniqueStoragePath(file.name)
       const { error: uploadError } = await supabase.storage
         .from(DOCUMENTS_BUCKET)
         .upload(path, file, { contentType: file.type || undefined })
@@ -122,10 +143,17 @@ export function UserDashboard() {
               <Typography color="text.secondary">Loading…</Typography>
             </Box>
           ) : (
-            <DocumentList documents={documents} onDownload={handleDownload} onDelete={handleDelete} />
+            <DocumentList
+              documents={documents}
+              onView={setPreviewDoc}
+              onDownload={handleDownload}
+              onDelete={handleDelete}
+            />
           )}
         </Paper>
       </Stack>
+
+      <DocumentPreviewDialog doc={previewDoc} onClose={() => setPreviewDoc(null)} />
     </AppLayout>
   )
 }
