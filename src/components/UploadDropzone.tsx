@@ -51,7 +51,7 @@ export function UploadDropzone({ uploading, onFiles, onRejected }: UploadDropzon
         border: '2px dashed',
         borderColor: dragging ? 'primary.main' : 'divider',
         borderRadius: 3,
-        p: 5,
+        p: { xs: 3, sm: 5 },
         textAlign: 'center',
         cursor: uploading ? 'default' : 'pointer',
         bgcolor: dragging ? 'action.hover' : 'background.paper',

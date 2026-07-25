@@ -32,13 +32,15 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 {profile.email}
               </Typography>
               <Button startIcon={<LogoutIcon />} onClick={() => signOut()} color="inherit">
-                Sign out
+                <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                  Sign out
+                </Box>
               </Button>
             </>
           )}
         </Toolbar>
       </AppBar>
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 4 } }}>
         {children}
       </Container>
     </Box>

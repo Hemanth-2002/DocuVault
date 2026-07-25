@@ -7,7 +7,12 @@ import {
   IconButton,
   Typography,
   Box,
+  Stack,
+  Card,
+  CardActionArea,
   Tooltip,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material'
 import DownloadIcon from '@mui/icons-material/Download'
 import DeleteIcon from '@mui/icons-material/Delete'
@@ -40,11 +45,52 @@ interface DocumentListProps {
 }
 
 export function DocumentList({ documents, onView, onDownload, onDelete, emptyMessage }: DocumentListProps) {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+
   if (documents.length === 0) {
     return (
       <Box sx={{ textAlign: 'center', py: 6 }}>
         <Typography color="text.secondary">{emptyMessage ?? 'No documents yet.'}</Typography>
       </Box>
+    )
+  }
+
+  if (isMobile) {
+    return (
+      <Stack spacing={1.5} sx={{ p: 1.5 }}>
+        {documents.map((doc) => (
+          <Card key={doc.id} variant="outlined" sx={{ borderRadius: 2 }}>
+            <CardActionArea onClick={() => onView(doc)} sx={{ p: 1.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                {iconFor(doc.mime_type)}
+                <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+                  <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>
+                    {doc.file_name}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {formatSize(doc.size_bytes)} · {new Date(doc.uploaded_at).toLocaleDateString()}
+                  </Typography>
+                </Box>
+                <Box onClick={(e) => e.stopPropagation()} sx={{ display: 'flex' }}>
+                  <Tooltip title="Download">
+                    <IconButton onClick={() => onDownload(doc)} size="small">
+                      <DownloadIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  {onDelete && (
+                    <Tooltip title="Delete">
+                      <IconButton onClick={() => onDelete(doc)} size="small" color="error">
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  )}
+                </Box>
+              </Box>
+            </CardActionArea>
+          </Card>
+        ))}
+      </Stack>
     )
   }
 

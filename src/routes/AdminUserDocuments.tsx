@@ -59,7 +59,10 @@ export function AdminUserDocuments() {
           <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/admin')} sx={{ mb: 1 }}>
             Back to users
           </Button>
-          <Typography variant="h4" sx={{ fontWeight: 700 }}>
+          <Typography
+            variant="h4"
+            sx={{ fontWeight: 700, wordBreak: 'break-word', fontSize: { xs: '1.5rem', sm: '2.125rem' } }}
+          >
             {profile ? profile.email : 'Loading…'}
           </Typography>
           <Typography color="text.secondary">Viewing this user's documents.</Typography>
