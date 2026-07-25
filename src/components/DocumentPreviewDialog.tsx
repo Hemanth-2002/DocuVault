@@ -23,9 +23,12 @@ import SendIcon from '@mui/icons-material/Send'
 import { useQuery } from '@tanstack/react-query'
 import mammoth from 'mammoth'
 import ReactMarkdown from 'react-markdown'
+import { Document, Page, pdfjs } from 'react-pdf'
 import { supabase, DOCUMENTS_BUCKET } from '../lib/supabaseClient'
 import { summarizeDocument, askDocumentStream, type ChatMessage } from '../lib/ai'
 import type { DocumentRow } from '../types'
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs', import.meta.url).toString()
 
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
@@ -72,6 +75,9 @@ export function DocumentPreviewDialog({ doc, onClose }: DocumentPreviewDialogPro
   const [objectUrl, setObjectUrl] = useState<string | null>(null)
   const [textContent, setTextContent] = useState<string | null>(null)
   const [docxHtml, setDocxHtml] = useState<string | null>(null)
+  const [numPages, setNumPages] = useState<number | null>(null)
+  const [pdfContainer, setPdfContainer] = useState<HTMLDivElement | null>(null)
+  const [pdfPageWidth, setPdfPageWidth] = useState(0)
 
   const [tab, setTab] = useState<'preview' | 'ask'>('preview')
   const [summary, setSummary] = useState<string | null>(null)
@@ -92,9 +98,10 @@ export function DocumentPreviewDialog({ doc, onClose }: DocumentPreviewDialogPro
     setObjectUrl(null)
     setTextContent(null)
     setDocxHtml(null)
+    setNumPages(null)
     if (!blob) return
 
-    if (isImage || isPdf) {
+    if (isImage) {
       const url = URL.createObjectURL(blob)
       setObjectUrl(url)
       return () => URL.revokeObjectURL(url)
@@ -107,7 +114,17 @@ export function DocumentPreviewDialog({ doc, onClose }: DocumentPreviewDialogPro
         mammoth.convertToHtml({ arrayBuffer: buffer }).then((result) => setDocxHtml(result.value)),
       )
     }
-  }, [blob, isImage, isPdf, isText, isDocx])
+  }, [blob, isImage, isText, isDocx])
+
+  useEffect(() => {
+    if (!pdfContainer) return
+    const observer = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width
+      if (width) setPdfPageWidth(width)
+    })
+    observer.observe(pdfContainer)
+    return () => observer.disconnect()
+  }, [pdfContainer])
 
   useEffect(() => {
     setTab('preview')
@@ -224,13 +241,34 @@ export function DocumentPreviewDialog({ doc, onClose }: DocumentPreviewDialogPro
               />
             )}
 
-            {!isLoading && !isError && blob && isPdf && objectUrl && (
-              <Box
-                component="embed"
-                src={objectUrl}
-                type="application/pdf"
-                sx={{ width: '100%', height: '70vh', border: 0 }}
-              />
+            {!isLoading && !isError && blob && isPdf && (
+              <Box ref={setPdfContainer} sx={{ width: '100%', maxHeight: '70vh', overflowY: 'auto', mx: 'auto' }}>
+                <Document
+                  file={blob}
+                  onLoadSuccess={({ numPages: n }) => setNumPages(n)}
+                  loading={
+                    <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+                      <CircularProgress size={24} />
+                    </Box>
+                  }
+                  error={
+                    <Typography color="error" sx={{ textAlign: 'center', py: 4 }}>
+                      Failed to render PDF.
+                    </Typography>
+                  }
+                >
+                  {pdfPageWidth > 0 &&
+                    Array.from({ length: numPages ?? 0 }, (_, i) => (
+                      <Page
+                        key={i}
+                        pageNumber={i + 1}
+                        width={pdfPageWidth}
+                        renderTextLayer={false}
+                        renderAnnotationLayer={false}
+                      />
+                    ))}
+                </Document>
+              </Box>
             )}
 
             {!isLoading && !isError && blob && isText && (
